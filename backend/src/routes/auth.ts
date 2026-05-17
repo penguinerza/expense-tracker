@@ -42,6 +42,9 @@ export async function authRoutes(fastify: FastifyInstance) {
         const googleId = payload.sub;
 
         if (googleId !== process.env.AUTHORIZED_GOOGLE_USER_ID) {
+          fastify.log.warn(
+            `Rejected login: googleId=${googleId} email=${payload.email} (set AUTHORIZED_GOOGLE_USER_ID to this googleId to allow)`
+          );
           return reply.redirect(`${process.env.FRONTEND_URL}/login?error=unauthorized`);
         }
 
