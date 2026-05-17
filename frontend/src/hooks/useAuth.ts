@@ -7,6 +7,7 @@ export function useAuth() {
     queryFn: () => api.get("/auth/me"),
     retry: false,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   return {

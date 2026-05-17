@@ -25,13 +25,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: "NetworkFirst",
-            options: { cacheName: "api-cache", networkTimeoutSeconds: 5 },
-          },
-        ],
+        navigateFallback: null,
       },
     }),
   ],
