@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy backend
         run: |
-          docker build -t expense-tracker-backend ./backend
+          docker build --no-cache -t expense-tracker-backend ./backend
           docker stop backend || true
           docker rm backend || true
           docker run -d \
@@ -56,7 +56,7 @@ jobs:
 
       - name: Deploy frontend
         run: |
-          docker build -t expense-tracker-frontend ./frontend
+          docker build --no-cache -t expense-tracker-frontend ./frontend
           docker stop frontend || true
           docker rm frontend || true
           docker run -d \
