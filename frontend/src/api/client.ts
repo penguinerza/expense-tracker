@@ -1,5 +1,3 @@
-import { queryClient } from "../main";
-
 const BASE = "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -13,7 +11,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (res.status === 401) {
-    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     throw new Error("Unauthorized");
   }
 
