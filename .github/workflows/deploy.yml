@@ -24,7 +24,7 @@ jobs:
 
       - name: Write .env
         run: |
-          cat > /expense-tracker/.env <<EOF
+          cat > /expense-tracker/.env <<'EOF'
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
@@ -41,9 +41,29 @@ jobs:
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           EOF
 
-      - name: Deploy containers
+      - name: Deploy backend
         run: |
-          docker compose --env-file /expense-tracker/.env up -d --no-deps --build backend frontend
+          docker build -t expense-tracker-backend ./backend
+          docker stop backend || true
+          docker rm backend || true
+          docker run -d \
+            --name backend \
+            --network proxy \
+            --restart unless-stopped \
+            -v expense-tracker-db:/app/data \
+            --env-file /expense-tracker/.env \
+            expense-tracker-backend
+
+      - name: Deploy frontend
+        run: |
+          docker build -t expense-tracker-frontend ./frontend
+          docker stop frontend || true
+          docker rm frontend || true
+          docker run -d \
+            --name frontend \
+            --network proxy \
+            --restart unless-stopped \
+            expense-tracker-frontend
 
       - name: Setup NPM proxy host
         run: |
