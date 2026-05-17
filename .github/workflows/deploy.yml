@@ -41,13 +41,9 @@ jobs:
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           EOF
 
-      - name: Build Docker images
-        run: docker compose --env-file /expense-tracker/.env build
-
       - name: Deploy containers
         run: |
-          docker compose --env-file /expense-tracker/.env down || true
-          docker compose --env-file /expense-tracker/.env up -d
+          docker compose --env-file /expense-tracker/.env up -d --no-deps --build backend frontend
 
       - name: Setup NPM proxy host
         run: |
