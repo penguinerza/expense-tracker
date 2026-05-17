@@ -29,8 +29,8 @@ const BUCKET = () => process.env.R2_BUCKET_NAME!;
 export interface SnapshotData {
   timestamp: string;
   version: "1";
-  categories: Array<{ id: number; name: string; isPreset: boolean }>;
-  subcategories: Array<{ id: number; categoryId: number; name: string; isPreset: boolean }>;
+  categories: Array<{ id: number; name: string }>;
+  subcategories: Array<{ id: number; categoryId: number; name: string }>;
   expenses: Array<{
     id: number;
     amount: number;
@@ -52,13 +52,8 @@ export async function createSnapshot(dateStr: string): Promise<void> {
   const payload: SnapshotData = {
     timestamp: new Date().toISOString(),
     version: "1",
-    categories: cats.map((c) => ({ id: c.id, name: c.name, isPreset: c.isPreset })),
-    subcategories: subs.map((s) => ({
-      id: s.id,
-      categoryId: s.categoryId,
-      name: s.name,
-      isPreset: s.isPreset,
-    })),
+    categories: cats.map((c) => ({ id: c.id, name: c.name })),
+    subcategories: subs.map((s) => ({ id: s.id, categoryId: s.categoryId, name: s.name })),
     expenses: exps.map((e) => ({
       id: e.id,
       amount: e.amount,
