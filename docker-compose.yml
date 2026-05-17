@@ -14,7 +14,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/deploy:/opt/deploy:ro
-      - /opt/expense-tracker:/opt/expense-tracker
+      - ${HOME}/expense-tracker:${HOME}/expense-tracker
       - runner-tmp:/tmp/runner
 
   backend:
