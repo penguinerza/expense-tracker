@@ -37,12 +37,17 @@ async function main() {
   // Routes under /api prefix
   await fastify.register(
     async (api) => {
-      await authRoutes(api);
-      await expenseRoutes(api);
-      await categoryRoutes(api);
-      await viewRoutes(api);
-      await snapshotRoutes(api);
-      await tagRoutes(api);
+      // Each module is registered as its own encapsulated plugin so a
+      // `preHandler` hook (e.g. requireAuth) added inside a protected
+      // module does NOT leak onto the public auth routes. Calling them
+      // as bare functions shares one context and gates /auth/google +
+      // /auth/callback behind requireAuth, making login impossible.
+      await api.register(authRoutes);
+      await api.register(expenseRoutes);
+      await api.register(categoryRoutes);
+      await api.register(viewRoutes);
+      await api.register(snapshotRoutes);
+      await api.register(tagRoutes);
     },
     { prefix: "/api" }
   );
