@@ -20,11 +20,11 @@ jobs:
           done < /opt/deploy/infra.env
 
       - name: Ensure data directory
-        run: mkdir -p /opt/expense-tracker/data
+        run: mkdir -p ~/expense-tracker/data
 
       - name: Write .env
         run: |
-          cat > /opt/expense-tracker/.env <<EOF
+          cat > ~/expense-tracker/.env <<EOF
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
@@ -42,12 +42,12 @@ jobs:
           EOF
 
       - name: Build Docker images
-        run: docker compose build
+        run: docker compose --env-file ~/expense-tracker/.env build
 
       - name: Deploy containers
         run: |
-          docker compose down || true
-          docker compose up -d
+          docker compose --env-file ~/expense-tracker/.env down || true
+          docker compose --env-file ~/expense-tracker/.env up -d
 
       - name: Setup NPM proxy host
         run: |
