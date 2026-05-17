@@ -10,7 +10,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate("/log", { replace: true });
+      navigate("/overview", { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
