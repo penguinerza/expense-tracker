@@ -14,7 +14,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/deploy:/opt/deploy:ro
-      - ${HOME}/expense-tracker:${HOME}/expense-tracker
+      - ${HOME}/expense-tracker:/expense-tracker
       - runner-tmp:/tmp/runner
 
   backend:
@@ -22,7 +22,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file: /expense-tracker/.env
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/expenses.db
