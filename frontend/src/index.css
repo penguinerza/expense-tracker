@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design tokens ───────────────────────────────────────────── */
+:root {
+  /* Surfaces (warm cream) — stored as RGB channels for Tailwind opacity modifiers */
+  --color-surface-0: 250 248 244;
+  --color-surface-1: 244 240 232;
+  --color-surface-2: 235 229 216;
+  --color-surface-3: 221 213 198;
+
+  /* Ink (text) */
+  --color-ink:       44 32 24;
+  --color-ink-muted: 138 122 108;
+  --color-ink-faint: 197 186 176;
+
+  /* Accent (soft purple) */
+  --color-accent:       123 94 167;
+  --color-accent-bright: 155 125 207;
+  --color-accent-muted:  90 61 133;
+  --color-accent-dim:    237 232 247;
+
+  /* Semantic */
+  --color-success: 34 197 94;
+  --color-amber:   245 158 11;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    font-family: "Geist", system-ui, sans-serif;
+  }
+  body {
+    background-color: rgb(var(--color-surface-0));
+    color: rgb(var(--color-ink));
+    min-height: 100dvh;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .font-mono {
+    font-family: "Roboto Mono", Menlo, monospace;
+  }
+}

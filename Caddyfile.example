@@ -1,0 +1,11 @@
+yourdomain.com {
+    # Reverse proxy API requests to backend
+    handle /api/* {
+        reverse_proxy localhost:3001
+    }
+
+    # Serve frontend
+    handle {
+        reverse_proxy localhost:3000
+    }
+}
