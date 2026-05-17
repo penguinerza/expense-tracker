@@ -1,0 +1,179 @@
+name: Deploy expense-tracker
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, expense-tracker]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load infra credentials
+        run: |
+          while IFS='=' read -r key value; do
+            case "$key" in ''|\#*) continue ;; esac
+            echo "$key=$value" >> $GITHUB_ENV
+          done < /opt/deploy/infra.env
+
+      - name: Ensure data directory
+        run: mkdir -p /opt/expense-tracker/data
+
+      - name: Write .env
+        run: |
+          cat > /opt/expense-tracker/.env <<EOF
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
+          AUTHORIZED_GOOGLE_USER_ID=${{ secrets.AUTHORIZED_GOOGLE_USER_ID }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}
+          R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT=${{ secrets.R2_ENDPOINT }}
+          PORT=3001
+          NODE_ENV=production
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          EOF
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Deploy containers
+        run: |
+          docker compose down || true
+          docker compose up -d
+
+      - name: Setup NPM proxy host
+        run: |
+          TOKEN=$(curl -sf -X POST http://$SERVER_IP:81/api/tokens \
+            -H "Content-Type: application/json" \
+            -d "{\"identity\":\"$NPM_USER\",\"secret\":\"$NPM_PASS\"}" \
+            | jq -r '.token')
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Failed to get NPM token"
+            exit 1
+          fi
+
+          EXISTS=$(curl -sf http://$SERVER_IP:81/api/nginx/proxy-hosts \
+            -H "Authorization: Bearer $TOKEN" \
+            | jq '[.[] | select(.domain_names[] == "${{ vars.DOMAIN }}")] | length')
+
+          if [ -z "$EXISTS" ]; then
+            echo "Failed to query NPM proxy hosts"
+            exit 1
+          fi
+
+          if [ "$EXISTS" -eq "0" ]; then
+            RESPONSE=$(curl -s -X POST http://$SERVER_IP:81/api/nginx/proxy-hosts \
+              -H "Authorization: Bearer $TOKEN" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "domain_names": ["${{ vars.DOMAIN }}"],
+                "forward_scheme": "http",
+                "forward_host": "frontend",
+                "forward_port": 80,
+                "allow_websocket_upgrade": false,
+                "block_exploits": true,
+                "access_list_id": "0",
+                "certificate_id": 0,
+                "ssl_forced": false,
+                "caching_enabled": false,
+                "advanced_config": "",
+                "meta": {},
+                "http2_support": false,
+                "hsts_enabled": false,
+                "hsts_subdomains": false,
+                "locations": [
+                  {
+                    "path": "/api",
+                    "forward_scheme": "http",
+                    "forward_host": "backend",
+                    "forward_port": 3001
+                  }
+                ]
+              }')
+
+            if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
+              echo "Failed to create NPM proxy host: $RESPONSE"
+              exit 1
+            fi
+            echo "NPM proxy host created"
+          else
+            echo "NPM proxy host already exists, skipping"
+          fi
+
+      - name: Setup Cloudflare DNS
+        run: |
+          RESPONSE=$(curl -sf -X GET \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records?name=${{ vars.DOMAIN }}" \
+            -H "Authorization: Bearer $CF_API_TOKEN")
+
+          if [ $? -ne 0 ]; then
+            echo "Failed to query Cloudflare DNS records"
+            exit 1
+          fi
+
+          RECORD=$(echo "$RESPONSE" | jq '.result | length')
+
+          if [ "$RECORD" -eq "0" ]; then
+            RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"type\": \"CNAME\",
+                \"name\": \"${{ vars.DOMAIN }}\",
+                \"content\": \"$CF_TUNNEL_ID.cfargotunnel.com\",
+                \"proxied\": true
+              }")
+
+            if echo "$RESPONSE" | jq -e '.errors | length > 0' > /dev/null 2>&1; then
+              echo "Failed to create DNS record: $RESPONSE"
+              exit 1
+            fi
+            echo "DNS record created"
+          else
+            echo "DNS record already exists, skipping"
+          fi
+
+      - name: Setup Cloudflare Tunnel hostname
+        run: |
+          EXISTING=$(curl -sf \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/cfd_tunnel/$CF_TUNNEL_ID/configurations" \
+            -H "Authorization: Bearer $CF_API_TOKEN")
+
+          if [ $? -ne 0 ]; then
+            echo "Failed to get tunnel config"
+            exit 1
+          fi
+
+          EXISTS=$(echo "$EXISTING" | jq '[.result.config.ingress[] | select(.hostname == "${{ vars.DOMAIN }}")] | length')
+
+          if [ "$EXISTS" -eq "0" ]; then
+            NEW_INGRESS=$(echo "$EXISTING" | jq '
+              [.result.config.ingress[] | select(.hostname)]
+              + [{"hostname": "${{ vars.DOMAIN }}", "service": "http://nginx-proxy-manager:80"}]
+              + [{"service": "http_status:404"}]
+            ')
+
+            RESPONSE=$(curl -s -X PUT \
+              "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/cfd_tunnel/$CF_TUNNEL_ID/configurations" \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"config\": {\"ingress\": $NEW_INGRESS}}")
+
+            if echo "$RESPONSE" | jq -e '.errors | length > 0' > /dev/null 2>&1; then
+              echo "Failed to configure tunnel: $RESPONSE"
+              exit 1
+            fi
+            echo "Tunnel hostname configured"
+          else
+            echo "Tunnel hostname already configured, skipping"
+          fi
