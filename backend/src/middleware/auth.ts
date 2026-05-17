@@ -38,7 +38,7 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as SessionPayload;
-    if (payload.googleId !== process.env.AUTHORIZED_GOOGLE_USER_ID) {
+    if (payload.googleId.trim() !== process.env.AUTHORIZED_GOOGLE_USER_ID?.trim()) {
       return reply.code(403).send({ error: "Forbidden" });
     }
     request.user = payload;
