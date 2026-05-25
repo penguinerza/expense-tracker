@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db } from "../db/index";
-import { expenses, categories, subcategories, expenseTags } from "../db/schema";
-import { eq, and, gte, lte, inArray, SQL } from "drizzle-orm";
+import { expenses, categories, subcategories } from "../db/schema";
+import { eq, and, gte, lte, SQL } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import { getPaydayString } from "../services/payday";
 
@@ -33,16 +33,8 @@ function sundayOfDate(dateStr: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function fetchExpensesInRange(from: string, to: string, tagIds?: number[]) {
+async function fetchExpensesInRange(from: string, to: string) {
   const conditions: SQL[] = [gte(expenses.date, from), lte(expenses.date, to)];
-
-  if (tagIds && tagIds.length > 0) {
-    const tagged = db
-      .select({ expenseId: expenseTags.expenseId })
-      .from(expenseTags)
-      .where(inArray(expenseTags.tagId, tagIds));
-    conditions.push(inArray(expenses.id, tagged));
-  }
 
   return db
     .select({
@@ -109,9 +101,8 @@ export async function viewRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", requireAuth);
 
   // Weekly view: ?date=YYYY-MM-DD (any date within the desired week)
-  fastify.get<{ Querystring: { date?: string; tagIds?: string } }>("/views/weekly", async (request) => {
+  fastify.get<{ Querystring: { date?: string } }>("/views/weekly", async (request) => {
     const dateStr = request.query.date ?? new Date().toISOString().slice(0, 10);
-    const tagIds = request.query.tagIds ? request.query.tagIds.split(",").map(Number).filter(Boolean) : undefined;
     const from = mondayOfDate(dateStr);
     const to = sundayOfDate(dateStr);
 
@@ -130,7 +121,7 @@ export async function viewRoutes(fastify: FastifyInstance) {
       if (pd >= from && pd <= to) paydays.add(pd);
     }
 
-    const rows = await fetchExpensesInRange(from, to, tagIds);
+    const rows = await fetchExpensesInRange(from, to);
 
     // Daily totals
     const dailyMap = new Map<string, number>();
@@ -154,19 +145,18 @@ export async function viewRoutes(fastify: FastifyInstance) {
   });
 
   // Monthly view: ?year=2026&month=5
-  fastify.get<{ Querystring: { year?: string; month?: string; tagIds?: string } }>(
+  fastify.get<{ Querystring: { year?: string; month?: string } }>(
     "/views/monthly",
     async (request) => {
       const year = parseInt(request.query.year ?? String(new Date().getFullYear()));
       const month = parseInt(request.query.month ?? String(new Date().getMonth() + 1));
-      const tagIds = request.query.tagIds ? request.query.tagIds.split(",").map(Number).filter(Boolean) : undefined;
 
       const from = `${year}-${String(month).padStart(2, "0")}-01`;
       const lastDay = new Date(year, month, 0).getDate();
       const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
       const payday = getPaydayString(year, month);
-      const rows = await fetchExpensesInRange(from, to, tagIds);
+      const rows = await fetchExpensesInRange(from, to);
       const total = rows.reduce((sum, r) => sum + r.amount, 0);
 
       return {
@@ -186,7 +176,6 @@ export async function viewRoutes(fastify: FastifyInstance) {
     Querystring: {
       year1?: string; month1?: string;
       year2?: string; month2?: string;
-      tagIds?: string;
     };
   }>("/views/comparison/months", async (request) => {
     const now = new Date();
@@ -196,13 +185,12 @@ export async function viewRoutes(fastify: FastifyInstance) {
     const prevYear = m1 === 1 ? y1 - 1 : y1;
     const y2 = parseInt(request.query.year2 ?? String(prevYear));
     const m2 = parseInt(request.query.month2 ?? String(prevMonth));
-    const tagIds = request.query.tagIds ? request.query.tagIds.split(",").map(Number).filter(Boolean) : undefined;
 
     async function getMonthData(year: number, month: number) {
       const from = `${year}-${String(month).padStart(2, "0")}-01`;
       const lastDay = new Date(year, month, 0).getDate();
       const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-      const rows = await fetchExpensesInRange(from, to, tagIds);
+      const rows = await fetchExpensesInRange(from, to);
       const total = rows.reduce((sum, r) => sum + r.amount, 0);
       return { year, month, total, categories: groupByCategory(rows) };
     }
@@ -216,13 +204,12 @@ export async function viewRoutes(fastify: FastifyInstance) {
   });
 
   // Comparison: week-to-week within a month (calendar weeks Mon-Sun)
-  fastify.get<{ Querystring: { year?: string; month?: string; tagIds?: string } }>(
+  fastify.get<{ Querystring: { year?: string; month?: string } }>(
     "/views/comparison/weeks",
     async (request) => {
       const now = new Date();
       const year = parseInt(request.query.year ?? String(now.getFullYear()));
       const month = parseInt(request.query.month ?? String(now.getMonth() + 1));
-      const tagIds = request.query.tagIds ? request.query.tagIds.split(",").map(Number).filter(Boolean) : undefined;
 
       const monthFrom = `${year}-${String(month).padStart(2, "0")}-01`;
       const lastDay = new Date(year, month, 0).getDate();
@@ -250,7 +237,7 @@ export async function viewRoutes(fastify: FastifyInstance) {
 
       const weekData = await Promise.all(
         weeks.map(async (w) => {
-          const rows = await fetchExpensesInRange(w.from, w.to, tagIds);
+          const rows = await fetchExpensesInRange(w.from, w.to);
           const total = rows.reduce((sum, r) => sum + r.amount, 0);
           return { ...w, total, categories: groupByCategory(rows) };
         })

@@ -11,7 +11,7 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from "recharts";
 import { cn } from "../lib/utils";
 import { colors, pieColor } from "../lib/theme";
-import { api, MonthlyView, WeeklyView, CategoryBreakdown, Tag } from "../api/client";
+import { api, MonthlyView, WeeklyView, CategoryBreakdown } from "../api/client";
 
 function fmt(n: number) {
   return `¥${Math.round(n).toLocaleString()}`;
@@ -75,38 +75,12 @@ function CategoryRow({ cat, total }: { cat: CategoryBreakdown; total: number }) 
   );
 }
 
-function TagFilter({ tags, selected, onToggle }: { tags: Tag[]; selected: Set<number>; onToggle: (id: number) => void }) {
-  if (tags.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5 px-5 pb-3">
-      {tags.map((tag) => (
-        <button
-          key={tag.id}
-          onClick={() => onToggle(tag.id)}
-          className={cn(
-            "px-2.5 py-1 rounded-full font-sans text-xs transition-colors",
-            selected.has(tag.id)
-              ? "bg-accent text-white"
-              : "border border-surface-3 text-ink-muted hover:text-ink"
-          )}
-        >
-          {tag.name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function tagParam(selected: Set<number>) {
-  return selected.size > 0 ? `&tagIds=${Array.from(selected).join(",")}` : "";
-}
-
-function WeekView({ selectedTagIds }: { selectedTagIds: Set<number> }) {
+function WeekView() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
   const { data, isLoading } = useQuery<WeeklyView>({
-    queryKey: ["views", "weekly", date, Array.from(selectedTagIds).sort().join(",")],
-    queryFn: () => api.get(`/views/weekly?date=${date}${tagParam(selectedTagIds)}`),
+    queryKey: ["views", "weekly", date],
+    queryFn: () => api.get(`/views/weekly?date=${date}`),
   });
 
   function prevWeek() {
@@ -228,14 +202,14 @@ function WeekView({ selectedTagIds }: { selectedTagIds: Set<number> }) {
   );
 }
 
-function MonthView({ selectedTagIds }: { selectedTagIds: Set<number> }) {
+function MonthView() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
   const { data, isLoading } = useQuery<MonthlyView>({
-    queryKey: ["views", "monthly", year, month, Array.from(selectedTagIds).sort().join(",")],
-    queryFn: () => api.get(`/views/monthly?year=${year}&month=${month}${tagParam(selectedTagIds)}`),
+    queryKey: ["views", "monthly", year, month],
+    queryFn: () => api.get(`/views/monthly?year=${year}&month=${month}`),
   });
 
   function prev() {
@@ -353,21 +327,6 @@ type ViewMode = "week" | "month";
 
 export default function Overview() {
   const [view, setView] = useState<ViewMode>("week");
-  const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
-
-  const { data: allTags = [] } = useQuery<Tag[]>({
-    queryKey: ["tags"],
-    queryFn: () => api.get("/tags"),
-  });
-
-  function toggleTag(id: number) {
-    setSelectedTagIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
 
   return (
     <div className="min-h-dvh bg-surface-0 safe-top">
@@ -396,9 +355,7 @@ export default function Overview() {
         </div>
       </div>
 
-      <TagFilter tags={allTags} selected={selectedTagIds} onToggle={toggleTag} />
-
-      {view === "week" ? <WeekView selectedTagIds={selectedTagIds} /> : <MonthView selectedTagIds={selectedTagIds} />}
+      {view === "week" ? <WeekView /> : <MonthView />}
     </div>
   );
 }

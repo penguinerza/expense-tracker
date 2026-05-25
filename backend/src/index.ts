@@ -10,7 +10,6 @@ import { expenseRoutes } from "./routes/expenses";
 import { categoryRoutes } from "./routes/categories";
 import { viewRoutes } from "./routes/views";
 import { snapshotRoutes } from "./routes/snapshots";
-import { tagRoutes } from "./routes/tags";
 import { startCron } from "./cron";
 
 const fastify = Fastify({
@@ -47,7 +46,6 @@ async function main() {
       await api.register(categoryRoutes);
       await api.register(viewRoutes);
       await api.register(snapshotRoutes);
-      await api.register(tagRoutes);
     },
     { prefix: "/api" }
   );

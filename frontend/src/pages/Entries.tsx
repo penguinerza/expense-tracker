@@ -158,15 +158,6 @@ export default function Entries() {
                             <span className="text-ink-faint"> — {expense.note}</span>
                           )}
                         </p>
-                        {expense.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {expense.tags.map((tag) => (
-                              <span key={tag.id} className="px-1.5 py-px rounded-full bg-accent/10 text-accent text-2xs font-sans font-medium">
-                                {tag.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">

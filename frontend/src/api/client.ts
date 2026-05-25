@@ -45,12 +45,6 @@ export interface Subcategory {
   name: string;
 }
 
-export interface Tag {
-  id: number;
-  name: string;
-  createdAt: string;
-}
-
 export interface Expense {
   id: number;
   amount: number;
@@ -59,7 +53,6 @@ export interface Expense {
   subcategoryId: number;
   subcategoryName: string;
   note: string | null;
-  tags: { id: number; name: string }[];
   date: string;
   createdAt: string;
 }

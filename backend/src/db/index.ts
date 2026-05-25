@@ -42,16 +42,6 @@ export async function initDb() {
       `CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date)`,
       `CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id)`,
       `CREATE INDEX IF NOT EXISTS idx_subcategories_category ON subcategories(category_id)`,
-      `CREATE TABLE IF NOT EXISTS tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-      )`,
-      `CREATE TABLE IF NOT EXISTS expense_tags (
-        expense_id INTEGER NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
-        tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
-        PRIMARY KEY (expense_id, tag_id)
-      )`,
     ],
     "write"
   );

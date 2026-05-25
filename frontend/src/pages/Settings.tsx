@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-import { api, Category, Tag, Snapshot } from "../api/client";
+import { api, Category, Snapshot } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
 
 function fmtBytes(b: number) {
@@ -27,18 +27,12 @@ export default function Settings() {
   const [newCatName, setNewCatName] = useState("");
   const [newSubName, setNewSubName] = useState<Record<number, string>>({});
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
-  const [newTagName, setNewTagName] = useState("");
   const [restoreKey, setRestoreKey] = useState<string | null>(null);
   const [restoreResult, setRestoreResult] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: () => api.get("/categories"),
-  });
-
-  const { data: allTags = [] } = useQuery<Tag[]>({
-    queryKey: ["tags"],
-    queryFn: () => api.get("/tags"),
   });
 
   const { data: snapshots = [], isLoading: snapshotsLoading } = useQuery<Snapshot[]>({
@@ -75,21 +69,6 @@ export default function Settings() {
     mutationFn: (id: number) => api.delete(`/subcategories/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
     onError: (err: Error) => toast.error(`Failed to delete subcategory: ${err.message}`),
-  });
-
-  const addTag = useMutation({
-    mutationFn: (name: string) => api.post("/tags", { name }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tags"] });
-      setNewTagName("");
-    },
-    onError: (err: Error) => toast.error(`Failed to add tag: ${err.message}`),
-  });
-
-  const deleteTag = useMutation({
-    mutationFn: (id: number) => api.delete(`/tags/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tags"] }),
-    onError: (err: Error) => toast.error(`Failed to delete tag: ${err.message}`),
   });
 
   const restoreMutation = useMutation<
@@ -240,51 +219,6 @@ export default function Settings() {
             <button
               type="submit"
               disabled={!newCatName.trim() || addCategory.isPending}
-              className="font-sans text-sm text-accent disabled:opacity-30 font-medium"
-            >
-              Add
-            </button>
-          </form>
-        </div>
-
-        {/* Tags */}
-        <SectionHeader>Tags</SectionHeader>
-        <div className="mx-5 border border-surface-3 rounded-xl bg-surface-1 overflow-hidden">
-          {allTags.map((tag, i) => (
-            <div
-              key={tag.id}
-              className={cn("flex items-center px-4 py-4", i > 0 && "border-t border-surface-3")}
-            >
-              <span className="flex-1 font-sans text-sm text-ink">{tag.name}</span>
-              <button
-                onClick={() => deleteTag.mutate(tag.id)}
-                aria-label={`Delete tag ${tag.name}`}
-                className="text-red-500/60 hover:text-red-400 transition-colors p-1 -mr-1"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="size-4" aria-hidden="true">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                </svg>
-              </button>
-            </div>
-          ))}
-          <form
-            className="flex gap-3 px-4 py-4 border-t border-surface-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (newTagName.trim()) addTag.mutate(newTagName.trim());
-            }}
-          >
-            <input
-              type="text"
-              placeholder="New tag (e.g. cc, amazon)"
-              value={newTagName}
-              onChange={(e) => setNewTagName(e.target.value)}
-              className="flex-1 bg-transparent border-b border-surface-3 focus:border-accent outline-none font-sans text-sm text-ink placeholder:text-ink-faint py-1.5 transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={!newTagName.trim() || addTag.isPending}
               className="font-sans text-sm text-accent disabled:opacity-30 font-medium"
             >
               Add

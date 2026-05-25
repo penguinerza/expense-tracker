@@ -5,7 +5,7 @@ import {
   getDay, addMonths, subMonths, isSameDay, isAfter, startOfDay,
 } from "date-fns";
 import { cn } from "../lib/utils";
-import { api, Category, Tag } from "../api/client";
+import { api, Category } from "../api/client";
 
 // ── Inline calendar ───────────────────────────────────────────────────────────
 
@@ -129,7 +129,6 @@ interface FormState {
   categoryId: number | null;
   subcategoryId: number | null;
   note: string;
-  tagIds: number[];
   date: string;
 }
 
@@ -138,7 +137,6 @@ const INITIAL: FormState = {
   categoryId: null,
   subcategoryId: null,
   note: "",
-  tagIds: [],
   date: format(new Date(), "yyyy-MM-dd"),
 };
 
@@ -163,12 +161,6 @@ export default function LogModal({ open, onClose }: Props) {
     enabled: open,
   });
 
-  const { data: allTags = [] } = useQuery<Tag[]>({
-    queryKey: ["tags"],
-    queryFn: () => api.get("/tags"),
-    enabled: open,
-  });
-
   const mutation = useMutation({
     mutationFn: () =>
       api.post("/expenses", {
@@ -176,7 +168,6 @@ export default function LogModal({ open, onClose }: Props) {
         categoryId: form.categoryId,
         subcategoryId: form.subcategoryId,
         note: form.note || undefined,
-        tagIds: form.tagIds.length > 0 ? form.tagIds : undefined,
         date: form.date,
       }),
     onSuccess: () => {
@@ -228,14 +219,6 @@ export default function LogModal({ open, onClose }: Props) {
     if (step === "category") setStep("amount");
     else if (step === "subcategory") setStep("category");
     else if (step === "note") setStep("subcategory");
-  }
-
-  function toggleTag(id: number) {
-    setForm((f) =>
-      f.tagIds.includes(id)
-        ? { ...f, tagIds: f.tagIds.filter((t) => t !== id) }
-        : { ...f, tagIds: [...f.tagIds, id] }
-    );
   }
 
   if (!open && !visible) return null;
@@ -468,34 +451,6 @@ export default function LogModal({ open, onClose }: Props) {
                     className="w-full py-3 bg-transparent border-b border-surface-3 focus:border-accent outline-none font-sans text-ink placeholder:text-ink-faint text-[15px] transition-colors"
                   />
                 </div>
-
-                {allTags.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="block text-xs font-sans text-ink-muted uppercase tracking-widest">
-                      Tags
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {allTags.map((tag) => {
-                        const selected = form.tagIds.includes(tag.id);
-                        return (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => toggleTag(tag.id)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-full text-xs font-sans font-medium transition-colors",
-                              selected
-                                ? "bg-accent/15 text-accent"
-                                : "border border-surface-3 text-ink-muted hover:border-accent hover:text-accent"
-                            )}
-                          >
-                            {tag.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {mutation.error && (
                   <p className="text-red-400 text-sm font-sans text-pretty" role="alert">

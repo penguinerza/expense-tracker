@@ -4,36 +4,15 @@ import { format, subMonths } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "../lib/utils";
 import { colors } from "../lib/theme";
-import { api, MonthComparisonView, WeeksView, Tag } from "../api/client";
+import { api, MonthComparisonView, WeeksView } from "../api/client";
 
 function fmt(n: number) {
   return `¥${Math.round(n).toLocaleString()}`;
 }
 
-function tagParam(selected: Set<number>) {
-  return selected.size > 0 ? `&tagIds=${Array.from(selected).join(",")}` : "";
-}
-
 export default function Comparison() {
   const now = new Date();
   const [mode, setMode] = useState<"months" | "weeks">("months");
-  const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
-
-  const { data: allTags = [] } = useQuery<Tag[]>({
-    queryKey: ["tags"],
-    queryFn: () => api.get("/tags"),
-  });
-
-  function toggleTag(id: number) {
-    setSelectedTagIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  const tagKey = Array.from(selectedTagIds).sort().join(",");
 
   const [m1Year, setM1Year] = useState(now.getFullYear());
   const [m1Month, setM1Month] = useState(now.getMonth() + 1);
@@ -45,15 +24,15 @@ export default function Comparison() {
   const [wMonth, setWMonth] = useState(now.getMonth() + 1);
 
   const monthQuery = useQuery<MonthComparisonView>({
-    queryKey: ["views", "comparison", "months", m1Year, m1Month, m2Year, m2Month, tagKey],
+    queryKey: ["views", "comparison", "months", m1Year, m1Month, m2Year, m2Month],
     queryFn: () =>
-      api.get(`/views/comparison/months?year1=${m1Year}&month1=${m1Month}&year2=${m2Year}&month2=${m2Month}${tagParam(selectedTagIds)}`),
+      api.get(`/views/comparison/months?year1=${m1Year}&month1=${m1Month}&year2=${m2Year}&month2=${m2Month}`),
     enabled: mode === "months",
   });
 
   const weekQuery = useQuery<WeeksView>({
-    queryKey: ["views", "comparison", "weeks", wYear, wMonth, tagKey],
-    queryFn: () => api.get(`/views/comparison/weeks?year=${wYear}&month=${wMonth}${tagParam(selectedTagIds)}`),
+    queryKey: ["views", "comparison", "weeks", wYear, wMonth],
+    queryFn: () => api.get(`/views/comparison/weeks?year=${wYear}&month=${wMonth}`),
     enabled: mode === "weeks",
   });
 
@@ -70,26 +49,6 @@ export default function Comparison() {
       <div className="px-5 pt-5 pb-4">
         <h1 className="font-display text-2xl text-ink text-balance">Compare</h1>
       </div>
-
-      {/* Tag filter */}
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 px-5 pb-4">
-          {allTags.map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => toggleTag(tag.id)}
-              className={cn(
-                "px-2.5 py-1 rounded-full font-sans text-xs transition-colors",
-                selectedTagIds.has(tag.id)
-                  ? "bg-accent text-white"
-                  : "border border-surface-3 text-ink-muted hover:text-ink"
-              )}
-            >
-              {tag.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Mode toggle */}
       <div className="px-5 mb-6">

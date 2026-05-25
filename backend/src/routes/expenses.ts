@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { db } from "../db/index";
-import { expenses, categories, subcategories, tags, expenseTags } from "../db/schema";
-import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+import { expenses, categories, subcategories } from "../db/schema";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 
 interface ExpenseBody {
@@ -9,31 +9,7 @@ interface ExpenseBody {
   categoryId: number;
   subcategoryId: number;
   note?: string;
-  tagIds?: number[];
   date?: string; // YYYY-MM-DD, defaults to today
-}
-
-async function getTagsForExpenses(ids: number[]) {
-  if (ids.length === 0) return new Map<number, { id: number; name: string }[]>();
-  const rows = await db
-    .select({ expenseId: expenseTags.expenseId, tagId: tags.id, tagName: tags.name })
-    .from(expenseTags)
-    .innerJoin(tags, eq(expenseTags.tagId, tags.id))
-    .where(inArray(expenseTags.expenseId, ids));
-  const map = new Map<number, { id: number; name: string }[]>();
-  for (const r of rows) {
-    const list = map.get(r.expenseId) ?? [];
-    list.push({ id: r.tagId, name: r.tagName });
-    map.set(r.expenseId, list);
-  }
-  return map;
-}
-
-async function setExpenseTags(expenseId: number, tagIds: number[]) {
-  await db.delete(expenseTags).where(eq(expenseTags.expenseId, expenseId));
-  if (tagIds.length > 0) {
-    await db.insert(expenseTags).values(tagIds.map((tagId) => ({ expenseId, tagId })));
-  }
 }
 
 export async function expenseRoutes(fastify: FastifyInstance) {
@@ -68,13 +44,12 @@ export async function expenseRoutes(fastify: FastifyInstance) {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(expenses.date), desc(expenses.createdAt));
 
-    const tagMap = await getTagsForExpenses(rows.map((r) => r.id));
-    return rows.map((r) => ({ ...r, tags: tagMap.get(r.id) ?? [] }));
+    return rows;
   });
 
   // Create expense
   fastify.post<{ Body: ExpenseBody }>("/expenses", async (request, reply) => {
-    const { amount, categoryId, subcategoryId, note, tagIds, date } = request.body;
+    const { amount, categoryId, subcategoryId, note, date } = request.body;
 
     if (!amount || amount <= 0) {
       return reply.code(400).send({ error: "Amount must be positive" });
@@ -103,10 +78,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
       .values({ amount, categoryId, subcategoryId, note: note || null, date: dateToUse })
       .returning();
 
-    await setExpenseTags(inserted.id, tagIds ?? []);
-
-    const tagMap = await getTagsForExpenses([inserted.id]);
-    return reply.code(201).send({ ...inserted, tags: tagMap.get(inserted.id) ?? [] });
+    return reply.code(201).send(inserted);
   });
 
   // Update expense
@@ -114,7 +86,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     "/expenses/:id",
     async (request, reply) => {
       const id = parseInt(request.params.id);
-      const { amount, categoryId, subcategoryId, note, tagIds, date } = request.body;
+      const { amount, categoryId, subcategoryId, note, date } = request.body;
 
       const existing = await db.select().from(expenses).where(eq(expenses.id, id)).limit(1);
       if (existing.length === 0) {
@@ -134,12 +106,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
         .where(eq(expenses.id, id))
         .returning();
 
-      if (tagIds !== undefined) {
-        await setExpenseTags(id, tagIds);
-      }
-
-      const tagMap = await getTagsForExpenses([id]);
-      return { ...updated, tags: tagMap.get(id) ?? [] };
+      return updated;
     }
   );
 
