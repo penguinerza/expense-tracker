@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { currencySymbol } from "../lib/currency";
 
 export default function Login() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -27,7 +28,7 @@ export default function Login() {
         <div className="flex-1 flex flex-col items-center justify-center px-8 pt-16 lg:pt-12 lg:pb-6">
           <div className="mb-10 text-center">
             <div className="font-display text-8xl text-ink leading-none mb-6 select-none" aria-hidden="true">
-              ¥
+              {currencySymbol}
             </div>
             <h1 className="font-display text-3xl text-ink text-balance">Expense Tracker</h1>
             <p className="font-sans text-ink-muted text-sm mt-3 text-pretty">

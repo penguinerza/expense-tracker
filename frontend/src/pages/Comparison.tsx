@@ -5,10 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 import { cn } from "../lib/utils";
 import { colors } from "../lib/theme";
 import { api, MonthComparisonView, WeeksView } from "../api/client";
-
-function fmt(n: number) {
-  return `¥${Math.round(n).toLocaleString()}`;
-}
+import { formatCurrency as fmt } from "../lib/currency";
 
 export default function Comparison() {
   const now = new Date();

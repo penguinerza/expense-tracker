@@ -23,7 +23,6 @@ jobs:
           GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
           AUTHORIZED_GOOGLE_USER_ID=${{ secrets.AUTHORIZED_GOOGLE_USER_ID }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}
           R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}

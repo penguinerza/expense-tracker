@@ -4,7 +4,6 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import { initDb } from "./db/index";
 import { seedIfEmpty } from "./db/seed";
-import { initHolidays } from "./services/holidays";
 import { authRoutes } from "./routes/auth";
 import { expenseRoutes } from "./routes/expenses";
 import { categoryRoutes } from "./routes/categories";
@@ -22,9 +21,6 @@ async function main() {
   // Init DB
   await initDb();
   await seedIfEmpty();
-
-  // Load Japanese holidays from API
-  await initHolidays();
 
   // Plugins
   await fastify.register(cookie);

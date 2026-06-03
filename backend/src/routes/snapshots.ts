@@ -1,13 +1,17 @@
 import { FastifyInstance } from "fastify";
 import { client } from "../db/index";
 import { requireAuth } from "../middleware/auth";
-import { listSnapshots, getSnapshot } from "../services/r2";
+import { listSnapshots, getSnapshot, isBackupEnabled } from "../services/r2";
 
 export async function snapshotRoutes(fastify: FastifyInstance) {
   fastify.addHook("preHandler", requireAuth);
 
+  // Whether R2 backups are configured/enabled — lets the UI hide the section
+  fastify.get("/snapshots/status", async () => ({ enabled: isBackupEnabled() }));
+
   // List available snapshots
   fastify.get("/snapshots", async (_request, reply) => {
+    if (!isBackupEnabled()) return [];
     try {
       return await listSnapshots();
     } catch (err) {
@@ -18,6 +22,10 @@ export async function snapshotRoutes(fastify: FastifyInstance) {
 
   // Restore from a snapshot
   fastify.post<{ Body: { key: string } }>("/snapshots/restore", async (request, reply) => {
+    if (!isBackupEnabled()) {
+      return reply.code(404).send({ error: "R2 backup is disabled" });
+    }
+
     const { key } = request.body;
     if (!key || !key.startsWith("snapshot-") || !key.endsWith(".json")) {
       return reply.code(400).send({ error: "Invalid snapshot key" });

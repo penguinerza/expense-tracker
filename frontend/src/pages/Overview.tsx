@@ -12,10 +12,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis
 import { cn } from "../lib/utils";
 import { colors, pieColor } from "../lib/theme";
 import { api, MonthlyView, WeeklyView, CategoryBreakdown } from "../api/client";
-
-function fmt(n: number) {
-  return `¥${Math.round(n).toLocaleString()}`;
-}
+import { formatCurrency as fmt } from "../lib/currency";
 
 function CategoryRow({ cat, total }: { cat: CategoryBreakdown; total: number }) {
   const [open, setOpen] = useState(false);
@@ -157,7 +154,7 @@ function WeekView() {
                   {data.dailyTotals.map((entry) => (
                     <Cell
                       key={entry.date}
-                      fill={data.payday === entry.date ? colors.amber : entry.amount > 0 ? colors.accent : colors.surface3}
+                      fill={entry.amount > 0 ? colors.accent : colors.surface3}
                     />
                   ))}
                 </Bar>

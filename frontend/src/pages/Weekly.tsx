@@ -4,10 +4,7 @@ import { format, parseISO, addWeeks, subWeeks } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer } from "recharts";
 import { colors } from "../lib/theme";
 import { api, WeeklyView } from "../api/client";
-
-function fmt(n: number) {
-  return `¥${Math.round(n).toLocaleString()}`;
-}
+import { formatCurrency as fmt } from "../lib/currency";
 
 export default function Weekly() {
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -91,7 +88,7 @@ export default function Weekly() {
                   {data.dailyTotals.map((entry) => (
                     <Cell
                       key={entry.date}
-                      fill={data.payday === entry.date ? colors.amber : entry.amount > 0 ? colors.accent : colors.surface3}
+                      fill={entry.amount > 0 ? colors.accent : colors.surface3}
                     />
                   ))}
                 </Bar>

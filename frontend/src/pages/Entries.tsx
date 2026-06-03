@@ -2,12 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { toast } from "sonner";
-import { api, Expense, MonthlyView } from "../api/client";
+import { api, Expense } from "../api/client";
 import { cn } from "../lib/utils";
-
-function fmt(n: number) {
-  return `¥${Math.round(n).toLocaleString()}`;
-}
+import { formatCurrency as fmt } from "../lib/currency";
 
 function groupByDate(list: Expense[]): { date: string; items: Expense[] }[] {
   const map = new Map<string, Expense[]>();
@@ -35,14 +32,6 @@ export default function Entries() {
     queryKey: ["expenses", from, to],
     queryFn: () => api.get(`/expenses?from=${from}&to=${to}`),
   });
-
-  const year = month.getFullYear();
-  const monthNum = month.getMonth() + 1;
-  const { data: monthlyView } = useQuery<MonthlyView>({
-    queryKey: ["views", "monthly", year, monthNum],
-    queryFn: () => api.get(`/views/monthly?year=${year}&month=${monthNum}`),
-  });
-  const payday = monthlyView?.payday ?? null;
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/expenses/${id}`),
@@ -122,7 +111,7 @@ export default function Entries() {
             <div key={date}>
               {/* Date group header — editorial rule with display font */}
               <div className="flex items-center gap-3 px-5 pt-6 pb-1">
-                <span className={cn("font-display text-sm shrink-0", date === payday ? "text-amber" : "text-ink-muted")}>
+                <span className="font-display text-sm shrink-0 text-ink-muted">
                   {format(parseISO(date), "EEE, MMM d")}
                 </span>
                 <div className="flex-1 h-px bg-surface-2" />

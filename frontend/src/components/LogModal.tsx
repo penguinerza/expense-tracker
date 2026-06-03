@@ -5,6 +5,7 @@ import {
   getDay, addMonths, subMonths, isSameDay, isAfter, startOfDay,
 } from "date-fns";
 import { cn } from "../lib/utils";
+import { currencySymbol } from "../lib/currency";
 import { api, Category } from "../api/client";
 
 // ── Inline calendar ───────────────────────────────────────────────────────────
@@ -258,7 +259,7 @@ export default function LogModal({ open, onClose }: Props) {
             </div>
             <div className="text-center">
               <p className="font-mono text-2xl text-ink tabular-nums">
-                ¥{parseFloat(form.amount).toLocaleString()}
+                {currencySymbol}{parseFloat(form.amount).toLocaleString()}
               </p>
               <p className="text-ink-muted text-sm font-sans mt-1">Recorded</p>
             </div>
@@ -332,7 +333,7 @@ export default function LogModal({ open, onClose }: Props) {
 
                 <div className="flex flex-col items-center gap-3">
                   <div className="flex items-end gap-2">
-                    <span className="font-mono text-ink-muted text-2xl pb-2" aria-hidden="true">¥</span>
+                    <span className="font-mono text-ink-muted text-2xl pb-2" aria-hidden="true">{currencySymbol}</span>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -341,7 +342,7 @@ export default function LogModal({ open, onClose }: Props) {
                       value={form.amount}
                       onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                       onKeyDown={(e) => e.key === "Enter" && handleAmountSubmit()}
-                      aria-label="Amount in yen"
+                      aria-label="Amount"
                       className="font-mono text-6xl text-ink bg-transparent border-none outline-none w-44 text-right tabular-nums placeholder:text-surface-3"
                     />
                   </div>
@@ -363,7 +364,7 @@ export default function LogModal({ open, onClose }: Props) {
               <div className="flex flex-col overflow-hidden">
                 <div className="px-5 pt-5 pb-4">
                   <p className="font-mono text-2xl text-ink tabular-nums">
-                    ¥{parseFloat(form.amount).toLocaleString()}
+                    {currencySymbol}{parseFloat(form.amount).toLocaleString()}
                   </p>
                   <p className="font-display text-lg text-ink-muted mt-0.5">Select category</p>
                 </div>
@@ -397,7 +398,7 @@ export default function LogModal({ open, onClose }: Props) {
               <div className="flex flex-col overflow-hidden">
                 <div className="px-5 pt-5 pb-4">
                   <p className="font-mono text-2xl text-ink tabular-nums">
-                    ¥{parseFloat(form.amount).toLocaleString()}
+                    {currencySymbol}{parseFloat(form.amount).toLocaleString()}
                   </p>
                   <p className="font-display text-lg text-ink-muted mt-0.5">{selectedCategory.name}</p>
                 </div>
@@ -426,7 +427,7 @@ export default function LogModal({ open, onClose }: Props) {
               <div className="flex flex-col px-5 pt-5 pb-6 gap-6">
                 <div>
                   <p className="font-mono text-2xl text-ink tabular-nums">
-                    ¥{parseFloat(form.amount).toLocaleString()}
+                    {currencySymbol}{parseFloat(form.amount).toLocaleString()}
                   </p>
                   <p className="font-sans text-sm text-ink-muted mt-1">
                     {selectedCategory?.name}

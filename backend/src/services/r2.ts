@@ -8,6 +8,11 @@ import {
 import { db } from "../db/index";
 import { categories, subcategories, expenses } from "../db/schema";
 
+// Daily R2 snapshots are opt-out: enabled unless R2_BACKUP_ENABLED is "false".
+export function isBackupEnabled(): boolean {
+  return process.env.R2_BACKUP_ENABLED !== "false";
+}
+
 let client: S3Client | null = null;
 
 function getClient(): S3Client {

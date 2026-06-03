@@ -1,13 +1,11 @@
 import cron from "node-cron";
-import { createSnapshot, pruneOldSnapshots } from "./services/r2";
-import { ensureFresh } from "./services/holidays";
+import { createSnapshot, pruneOldSnapshots, isBackupEnabled } from "./services/r2";
 
 export function startCron() {
-  // Refresh holiday cache daily at 01:00 (before snapshot at 02:00)
-  cron.schedule("0 1 * * *", async () => {
-    await ensureFresh();
-    console.log("[cron] Holiday cache refreshed");
-  });
+  if (!isBackupEnabled()) {
+    console.log("[cron] R2 backup disabled — no jobs scheduled");
+    return;
+  }
 
   // Daily snapshot at 02:00 server time
   cron.schedule("0 2 * * *", async () => {
@@ -24,5 +22,5 @@ export function startCron() {
     }
   });
 
-  console.log("[cron] Jobs scheduled: holiday refresh at 01:00, snapshot at 02:00");
+  console.log("[cron] Jobs scheduled: snapshot at 02:00");
 }

@@ -5,10 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { cn } from "../lib/utils";
 import { colors, pieColor } from "../lib/theme";
 import { api, MonthlyView, CategoryBreakdown } from "../api/client";
-
-function fmt(n: number) {
-  return `¥${Math.round(n).toLocaleString()}`;
-}
+import { formatCurrency as fmt } from "../lib/currency";
 
 function CategoryRow({ cat, total }: { cat: CategoryBreakdown; total: number }) {
   const [open, setOpen] = useState(false);

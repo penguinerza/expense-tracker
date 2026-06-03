@@ -35,9 +35,16 @@ export default function Settings() {
     queryFn: () => api.get("/categories"),
   });
 
+  const { data: backupStatus } = useQuery<{ enabled: boolean }>({
+    queryKey: ["snapshots", "status"],
+    queryFn: () => api.get("/snapshots/status"),
+  });
+  const backupEnabled = backupStatus?.enabled ?? true;
+
   const { data: snapshots = [], isLoading: snapshotsLoading } = useQuery<Snapshot[]>({
     queryKey: ["snapshots"],
     queryFn: () => api.get("/snapshots"),
+    enabled: backupEnabled,
   });
 
   const addCategory = useMutation({
@@ -227,6 +234,8 @@ export default function Settings() {
         </div>
 
         {/* Snapshots */}
+        {backupEnabled && (
+        <>
         <SectionHeader sub="Daily backups · 7-day retention">Snapshots</SectionHeader>
 
         {restoreResult && (
@@ -273,6 +282,8 @@ export default function Settings() {
             </div>
           ))}
         </div>
+        </>
+        )}
       </div>
 
       {/* Restore confirmation */}

@@ -49,14 +49,35 @@ Key variables:
 | `GOOGLE_CLIENT_SECRET` | OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | `https://yourdomain.com/api/auth/callback` |
 | `AUTHORIZED_GOOGLE_USER_ID` | Your Google `sub` (user ID) |
-| `JWT_SECRET` | Random secret ≥32 chars for session signing |
-| `COOKIE_DOMAIN` | Your domain (e.g. `yourdomain.com`) |
+| `JWT_SECRET` | Random secret ≥32 chars for session signing (see [below](#generating-jwt_secret)) |
 | `FRONTEND_URL` | `https://yourdomain.com` |
+| `R2_BACKUP_ENABLED` | `true` (default) — set to `false` to disable daily snapshots and skip all `R2_*` vars below |
 | `R2_ACCOUNT_ID` | Cloudflare Account ID |
 | `R2_ACCESS_KEY_ID` | R2 API key ID |
 | `R2_SECRET_ACCESS_KEY` | R2 API secret |
 | `R2_BUCKET_NAME` | R2 bucket name |
 | `R2_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
+
+#### Generating `JWT_SECRET`
+
+This is a secret you generate yourself — there's nothing to sign up for. It signs
+the session cookie, so use a long random string (≥32 chars) and keep it private.
+Any of these work:
+
+```bash
+# OpenSSL (most systems)
+openssl rand -base64 48
+
+# Node.js
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+
+# Linux /dev/urandom
+head -c 48 /dev/urandom | base64
+```
+
+Paste the output into `.env` as `JWT_SECRET=...`. Changing it later invalidates
+all existing sessions (everyone gets logged out), which is also how you'd force a
+logout everywhere.
 
 ### 5. Deploy
 
@@ -89,16 +110,49 @@ Caddy (HTTPS, port 443)
 ## Features
 
 - **Log**: Amount → Category → Subcategory → Note flow, optimized for mobile
-- **Weekly view**: Mon–Sun, daily bar chart, category breakdown, payday marker
+- **Weekly view**: Mon–Sun, daily bar chart, category breakdown
 - **Monthly view**: Pie chart + drilldown to individual transactions
 - **Comparison**: Month-to-month side-by-side, or week-by-week within a month
 - **Settings**: Manage categories/subcategories, restore from R2 snapshot
-- **Snapshots**: Daily cron at 02:00, 7-day retention, prune-only-on-success logic
-- **Payday**: 15th of month, adjusted for weekends + Japanese public holidays (2025–2027)
+- **Snapshots**: Daily cron at 02:00, 7-day retention, prune-only-on-success logic (optional, enabled by default)
 
-## Updating Japanese holidays
+## Currency
 
-Edit `backend/src/services/holidays.ts` and add the new year's dates to the `HOLIDAYS` set. Rebuild and redeploy.
+The app shows a single currency app-wide, configured at **build time** in the
+frontend (`frontend/.env`, copy from `frontend/.env.example`). Defaults to
+Japanese Yen if unset.
+
+| Variable | Description |
+|---|---|
+| `VITE_CURRENCY` | [ISO 4217](https://en.wikipedia.org/wiki/ISO_4217) currency code — e.g. `JPY`, `USD`, `EUR`. Decides the **symbol and number of decimal places**. |
+| `VITE_LOCALE` | [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) locale tag — e.g. `ja-JP`, `en-US`, `de-DE`. Decides the **grouping/decimal punctuation and symbol placement**. |
+
+Formatting is handled by the browser's built-in
+[`Intl.NumberFormat`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat),
+so the two settings combine. The same currency renders differently per locale:
+
+| `VITE_CURRENCY` | `VITE_LOCALE` | Renders |
+|---|---|---|
+| `JPY` | `ja-JP` | `￥1,235` |
+| `USD` | `en-US` | `$1,234.56` |
+| `USD` | `de-DE` | `1.234,56 $` |
+| `EUR` | `de-DE` | `1.234,56 €` |
+| `EUR` | `en-US` | `€1,234.56` |
+| `GBP` | `en-GB` | `£1,234.56` |
+
+Example — US dollars for a US audience:
+
+```bash
+# frontend/.env
+VITE_CURRENCY=USD
+VITE_LOCALE=en-US
+```
+
+**Notes:**
+- These are baked into the bundle at build time, so rebuild the frontend (or
+  pass them to the build step in CI) after changing them.
+- This is display-only — stored amounts are not converted. Switching `JPY` → `USD`
+  makes a stored `1000` render as `$1,000.00`; it is not an FX conversion.
 
 ## PWA icons
 

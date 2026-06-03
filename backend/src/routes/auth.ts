@@ -62,14 +62,14 @@ export async function authRoutes(fastify: FastifyInstance) {
           expiresIn: "30d",
         });
 
-        const isProduction = process.env.NODE_ENV === "production";
+        // Host-only cookie: frontend and API are served from the same domain,
+        // so no `domain` attribute is needed (and it stays scoped to this host).
         reply.setCookie("session", token, {
           httpOnly: true,
-          secure: isProduction,
+          secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
           path: "/",
           maxAge: 60 * 60 * 24 * 30, // 30 days
-          domain: isProduction ? process.env.COOKIE_DOMAIN : undefined,
         });
 
         return reply.redirect(`${process.env.FRONTEND_URL}/`);

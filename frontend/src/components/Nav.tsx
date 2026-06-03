@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "../lib/utils";
+import { currencySymbol } from "../lib/currency";
 
 const TABS = [
   {
@@ -76,7 +77,7 @@ export default function Nav({ onOpenLog }: NavProps) {
       {/* Brand mark */}
       <div className="px-5 py-5 border-b border-surface-3">
         <div className="flex items-center gap-3">
-          <span className="font-display text-3xl text-ink leading-none select-none" aria-hidden="true">¥</span>
+          <span className="font-display text-3xl text-ink leading-none select-none" aria-hidden="true">{currencySymbol}</span>
           <div>
             <p className="font-display text-sm text-ink leading-snug">Expense</p>
             <p className="font-display text-sm text-ink-muted leading-snug">Tracker</p>

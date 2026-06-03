@@ -73,7 +73,6 @@ export interface WeeklyView {
   from: string;
   to: string;
   total: number;
-  payday: string | null;
   dailyTotals: { date: string; amount: number }[];
   categories: CategoryBreakdown[];
 }
@@ -84,14 +83,12 @@ export interface MonthlyView {
   from: string;
   to: string;
   total: number;
-  payday: string;
   categories: CategoryBreakdown[];
 }
 
 export interface WeeksView {
   year: number;
   month: number;
-  payday: string;
   weeks: Array<{
     weekNum: number;
     from: string;

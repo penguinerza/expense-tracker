@@ -3,21 +3,6 @@ import { db } from "../db/index";
 import { expenses, categories, subcategories } from "../db/schema";
 import { eq, and, gte, lte, SQL } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
-import { getPaydayString } from "../services/payday";
-
-function isoWeekBounds(year: number, week: number): { from: string; to: string } {
-  // ISO week: Monday=1, Sunday=7
-  const jan4 = new Date(year, 0, 4); // Jan 4 is always in week 1
-  const weekStart = new Date(jan4);
-  weekStart.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (week - 1) * 7);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-
-  return {
-    from: weekStart.toISOString().slice(0, 10),
-    to: weekEnd.toISOString().slice(0, 10),
-  };
-}
 
 function mondayOfDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -106,21 +91,6 @@ export async function viewRoutes(fastify: FastifyInstance) {
     const from = mondayOfDate(dateStr);
     const to = sundayOfDate(dateStr);
 
-    const [year, month] = from.split("-").map(Number);
-    const toDate = new Date(to);
-    const toYear = toDate.getFullYear();
-    const toMonth = toDate.getMonth() + 1;
-
-    // Check if payday falls in this week range
-    const paydays = new Set<string>();
-    for (const [y, m] of [
-      [year, month],
-      [toYear, toMonth],
-    ]) {
-      const pd = getPaydayString(y, m);
-      if (pd >= from && pd <= to) paydays.add(pd);
-    }
-
     const rows = await fetchExpensesInRange(from, to);
 
     // Daily totals
@@ -138,7 +108,6 @@ export async function viewRoutes(fastify: FastifyInstance) {
       from,
       to,
       total,
-      payday: paydays.size > 0 ? Array.from(paydays)[0] : null,
       dailyTotals: Array.from(dailyMap.entries()).map(([date, amount]) => ({ date, amount })),
       categories: groupByCategory(rows),
     };
@@ -155,7 +124,6 @@ export async function viewRoutes(fastify: FastifyInstance) {
       const lastDay = new Date(year, month, 0).getDate();
       const to = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-      const payday = getPaydayString(year, month);
       const rows = await fetchExpensesInRange(from, to);
       const total = rows.reduce((sum, r) => sum + r.amount, 0);
 
@@ -165,7 +133,6 @@ export async function viewRoutes(fastify: FastifyInstance) {
         from,
         to,
         total,
-        payday,
         categories: groupByCategory(rows),
       };
     }
@@ -243,8 +210,7 @@ export async function viewRoutes(fastify: FastifyInstance) {
         })
       );
 
-      const payday = getPaydayString(year, month);
-      return { year, month, payday, weeks: weekData };
+      return { year, month, weeks: weekData };
     }
   );
 }
