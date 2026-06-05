@@ -1,51 +1,29 @@
 version: "3.9"
 
 services:
-  runner:
-    image: myoung34/github-runner:latest
-    restart: unless-stopped
-    environment:
-      - RUNNER_SCOPE=repo
-      - REPO_URL=https://github.com/penguinerza/expense-tracker
-      - RUNNER_TOKEN=${RUNNER_TOKEN}
-      - RUNNER_NAME=expense-tracker
-      - LABELS=expense-tracker
-      - RUNNER_WORKDIR=/tmp/runner/work
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /opt/deploy:/opt/deploy:ro
-      - ${HOME}/expense-tracker:/expense-tracker
-      - runner-tmp:/tmp/runner
-
-  backend:
+  expense-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: /expense-tracker/.env
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/expenses.db
     volumes:
       - db-data:/app/data
-    ports:
-      - "3001:3001"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
       interval: 30s
       timeout: 5s
       retries: 3
 
-  frontend:
+  expense-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
-    ports:
-      - "3000:80"
     depends_on:
-      - backend
+      - expense-backend
 
 volumes:
   db-data:
-  runner-tmp:
