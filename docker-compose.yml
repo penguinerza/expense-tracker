@@ -9,19 +9,19 @@ services:
     environment:
       - NODE_ENV=production
       - DB_PATH=/app/data/expenses.db
-      - PORT=${{project.PORT}}
-      - FRONTEND_URL=${{project.FRONTEND_URL}}
-      - GOOGLE_CLIENT_ID=${{project.GOOGLE_CLIENT_ID}}
-      - GOOGLE_CLIENT_SECRET=${{project.GOOGLE_CLIENT_SECRET}}
-      - GOOGLE_REDIRECT_URI=${{project.GOOGLE_REDIRECT_URI}}
-      - AUTHORIZED_GOOGLE_USER_ID=${{project.AUTHORIZED_GOOGLE_USER_ID}}
-      - JWT_SECRET=${{project.JWT_SECRET}}
-      - R2_BACKUP_ENABLED=${{project.R2_BACKUP_ENABLED}}
-      - R2_ACCOUNT_ID=${{project.R2_ACCOUNT_ID}}
-      - R2_ACCESS_KEY_ID=${{project.R2_ACCESS_KEY_ID}}
-      - R2_SECRET_ACCESS_KEY=${{project.R2_SECRET_ACCESS_KEY}}
-      - R2_BUCKET_NAME=${{project.R2_BUCKET_NAME}}
-      - R2_ENDPOINT=${{project.R2_ENDPOINT}}
+      - PORT=${PORT:-3001}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      - AUTHORIZED_GOOGLE_USER_ID=${AUTHORIZED_GOOGLE_USER_ID}
+      - JWT_SECRET=${JWT_SECRET}
+      - R2_BACKUP_ENABLED=${R2_BACKUP_ENABLED:-true}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - R2_ENDPOINT=${R2_ENDPOINT}
     volumes:
       - db-data:/app/data
     healthcheck:
