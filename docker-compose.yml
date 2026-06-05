@@ -29,6 +29,9 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - default
+      - dokploy-network
 
   expense-frontend:
     build:
@@ -37,6 +40,13 @@ services:
     restart: unless-stopped
     depends_on:
       - expense-backend
+    networks:
+      - default
+      - dokploy-network
 
 volumes:
   db-data:
+
+networks:
+  dokploy-network:
+    external: true
